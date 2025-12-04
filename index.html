@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flow Matching for Multimodal Distributions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            /* Seaborn Rocket Palette */
+            --primary-color: #D64545;
+            --primary-dark: #8B1A4E;
+            --secondary-color: #F39C6B;
+            --accent-color: #FABB6E;
+            --text-color: #1C0B19;
+            --text-light: #6B4C5C;
+            --bg-color: #FFFFFF;
+            --bg-secondary: #FFF5EB;
+            --border-color: #F5E1D5;
+            --gradient-start: #8B1A4E;
+            --gradient-mid: #D64545;
+            --gradient-end: #F39C6B;
+            --shadow: 0 2px 10px rgba(139, 26, 78, 0.12);
+            --shadow-hover: 0 4px 20px rgba(139, 26, 78, 0.18);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.7;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            overflow-x: hidden;
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: var(--primary-dark);
+            z-index: 9999;
+            transition: width 0.2s ease;
+        }
+
+        /* Sidebar Table of Contents */
+        .toc-sidebar {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            z-index: 100;
+            max-height: 80vh;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .toc-sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .toc-sidebar::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .toc-title {
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--text-light);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .toc-sidebar ul {
+            list-style: none;
+        }
+
+        .toc-sidebar li {
+            margin-bottom: 8px;
+        }
+
+        .toc-sidebar a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 0.9em;
+            display: block;
+            padding: 5px 0;
+            border-left: 2px solid transparent;
+            padding-left: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .toc-sidebar a:hover {
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            padding-left: 15px;
+        }
+
+        .toc-sidebar a.active {
+            color: var(--primary-color);
+            border-left-color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 60px 40px;
+            margin-left: 260px;
+        }
+
+        /* Header Section */
+        .header-section {
+            text-align: center;
+            margin-bottom: 50px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2.8em;
+            margin-bottom: 25px;
+            font-weight: 700;
+            line-height: 1.3;
+            color: var(--primary-dark);
+        }
+
+        /* Authors */
+        .authors {
+            margin-bottom: 15px;
+            font-size: 1.15em;
+        }
+
+        .author {
+            display: inline;
+            position: relative;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .author:hover {
+            color: var(--primary-color);
+            background-color: rgba(214, 69, 69, 0.1);
+            box-shadow: 0 2px 8px rgba(214, 69, 69, 0.15);
+        }
+
+        .author sup {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .author-separator {
+            margin: 0 8px;
+            color: var(--text-light);
+        }
+
+        .affiliations {
+            margin-top: 15px;
+            color: var(--text-light);
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .affiliation {
+            display: inline;
+            margin: 0 15px;
+        }
+
+        .affiliation:first-child {
+            margin-left: 0;
+        }
+
+        /* Resource Links */
+        .links {
+            text-align: center;
+            margin: 35px 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .links a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: var(--primary-dark);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .links a img.icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .links a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.2);
+            transition: left 0.5s ease;
+        }
+
+        .links a:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .links a:hover::before {
+            left: 100%;
+        }
+
+        .links a:active {
+            transform: translateY(0);
+        }
+
+        /* Content Sections */
+        section {
+            margin-bottom: 50px;
+            scroll-margin-top: 20px;
+        }
+
+        h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: var(--text-color);
+            font-weight: 600;
+            position: relative;
+            padding-bottom: 12px;
+        }
+
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: var(--primary-dark);
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.4em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: var(--text-color);
+            font-weight: 500;
+        }
+
+        p {
+            margin-bottom: 18px;
+            line-height: 1.8;
+            color: var(--text-color);
+        }
+
+        /* Abstract Box */
+        .abstract {
+            background: var(--bg-secondary);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow);
+            border-left: 5px solid var(--primary-dark);
+        }
+
+        .abstract h2 {
+            margin-top: 0;
+            padding-bottom: 15px;
+        }
+
+        .abstract h2::after {
+            background: var(--primary-dark);
+        }
+
+        /* Figures */
+        .figure {
+            text-align: center;
+            margin: 40px 0;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .figure:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+        }
+
+        .figure img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .figure-caption {
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: var(--text-light);
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        table th {
+            background: var(--primary-dark);
+            color: white;
+            padding: 16px;
+            text-align: left;
+            font-weight: 500;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-color);
+        }
+
+        table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        table tbody tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* BibTeX */
+        .bibtex-container {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .bibtex {
+            background-color: var(--bg-secondary);
+            color: var(--text-color);
+            padding: 20px 25px;
+            padding-top: 35px;
+            border-radius: 10px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--border-color);
+            position: relative;
+            white-space: pre-wrap;
+        }
+
+        .bibtex::before {
+            content: 'BibTeX';
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            font-size: 0.7em;
+            color: var(--primary-color);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            padding: 6px 12px;
+            background: var(--primary-dark);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.75em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+
+        .copy-button:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .copy-button:active {
+            transform: translateY(0);
+        }
+
+        .copy-button.copied {
+            background: var(--secondary-color);
+        }
+
+        .bibtex::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .bibtex::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin-left: 25px;
+            margin-bottom: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+            line-height: 1.7;
+        }
+
+        /* References */
+        .references {
+            counter-reset: reference-counter;
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .references li {
+            counter-increment: reference-counter;
+            margin-bottom: 15px;
+            padding-left: 40px;
+            position: relative;
+            line-height: 1.7;
+            font-size: 0.85em;
+        }
+
+        .references li::before {
+            content: "[" counter(reference-counter) "]";
+            position: absolute;
+            left: 0;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .references a {
+            color: var(--primary-color);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-bottom 0.3s ease;
+        }
+
+        .references a:hover {
+            border-bottom: 1px solid var(--primary-color);
+        }
+
+        /* Inline Citations */
+        .cite {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            margin-left: 2px;
+        }
+
+        .cite:hover {
+            color: var(--primary-dark);
+        }
+
+        .cite::before {
+            content: "[";
+        }
+
+        .cite::after {
+            content: "]";
+        }
+
+        /* Responsive Design */
+        /* Large screens - center everything */
+        @media (min-width: 1600px) {
+            .container {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .toc-sidebar {
+                left: calc(50% - 450px - 220px);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                margin-left: 0;
+                padding: 40px 30px;
+            }
+
+            .toc-sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.6em;
+            }
+
+            .container {
+                padding: 30px 20px;
+            }
+
+            .links {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .links a {
+                justify-content: center;
+            }
+        }
+
+        /* Mobile TOC Toggle */
+        .toc-toggle {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-dark);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            box-shadow: var(--shadow-hover);
+            cursor: pointer;
+            z-index: 1000;
+            font-size: 24px;
+        }
+
+        @media (max-width: 1200px) {
+            .toc-toggle {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Progress Bar -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- Table of Contents Sidebar -->
+    <aside class="toc-sidebar" id="tocSidebar">
+        <div class="toc-title">Contents</div>
+        <ul>
+            <li><a href="#abstract">Abstract</a></li>
+            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#method">Method</a></li>
+            <li><a href="#experiments">Experiments</a></li>
+            <li><a href="#theory">Theory</a></li>
+            <li><a href="#conclusion">Conclusion</a></li>
+            <li><a href="#citation">Citation</a></li>
+            <li><a href="#references">References</a></li>
+        </ul>
+    </aside>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header-section">
+            <h1>Flow Matching for Multimodal Distributions</h1>
+
+            <!-- Authors with clickable links -->
+            <div class="authors">
+                <a href="https://gaoxiangluo.github.io/" class="author">Gaoxiang Luo<sup>1,*</sup></a><span class="author-separator">,</span>
+                <a href="https://sites.google.com/umn.edu/frank-cole" class="author">Frank Cole<sup>2,*</sup></a><span class="author-separator">,</span>
+                <a href="#" class="author">Sihang Zhang<sup>3</sup></a><span class="author-separator">,</span>
+                <a href="#" class="author">Yuxiang Wan<sup>1</sup></a><span class="author-separator">,</span>
+                <a href="https://lu.math.umn.edu" class="author">Yulong Lu<sup>2</sup></a><span class="author-separator">,</span>
+                <a href="https://sunju.org" class="author">Ju Sun<sup>1</sup></a>
+            </div>
+
+            <!-- Affiliations -->
+            <div class="affiliations">
+                <span class="affiliation"><sup>*</sup>Equal Contribution</span>
+                <span class="affiliation"><sup>1</sup>Department of Computer Science and Engineering</span>
+                <br>
+                <span class="affiliation"><sup>2</sup>School of Mathematics</span>
+                <span class="affiliation"><sup>3</sup>School of Statistics</span>
+                <br>
+                <span class="affiliation">University of Minnesota Twin Cities</span>
+            </div>
+
+            <!-- Resource Links -->
+            <div class="links">
+                <a href="#"><img src="assets/arxiv-logomark-small.svg" alt="arXiv" class="icon"> Paper (Coming soon)</a>
+                <a href="#"><img src="assets/github-mark.svg" alt="GitHub" class="icon" style="filter: brightness(0) invert(1);"> Code (Coming soon)</a>
+                <a href="#"><img src="assets/hf-logo.svg" alt="HuggingFace" class="icon"> Models (Coming soon)</a>
+            </div>
+        </div>
+
+        <!-- Teaser Figure -->
+        <div class="figure" style="background: transparent; padding: 0;">
+            <img src="assets/teaser.svg" alt="Teaser figure" style="width: 100%; max-width: 100%; height: auto;">
+            <div class="figure-caption" style="margin-top: 15px;">
+                <strong>Figure 1:</strong> Overview of Mixture-Modeling Flow Matching (MM-FM).
+            </div>
+            <div style="margin-top: 15px; padding: 20px 30px; background: var(--bg-secondary); border-radius: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary-dark);">
+                <span style="font-weight: 700; color: var(--primary-dark); font-size: 1em;">TL;DR:</span>
+                <span style="color: var(--text-color); font-size: 1em; margin-left: 8px;">(a) Mixture source distribution (e.g., GMM) and mode-dependent data coupling co-design (b) for multimodal target distribution (e.g., foundation model as visual tokenizers) (c) for <strong>efficient</strong> flow matching.</span>
+            </div>
+        </div>
+
+        <!-- Motivation Progression -->
+        <section style="margin-top: 40px; margin-bottom: 50px;">
+            <h2 style="margin-bottom: 30px;">Motivation</h2>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
+                <!-- Left Column: Gaussian Source -->
+                <div>
+                    <!-- Gaussian to Gaussian -->
+                    <div style="margin-bottom: 45px;">
+                        <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px; box-shadow: var(--shadow); border-right: 4px solid #F39C6B;">
+                            <img src="assets/gaussian-to-gaussian.gif" alt="Gaussian to Gaussian" style="width: 100%; height: auto; border-radius: 8px;">
+                        </div>
+                        <div style="margin-top: 15px; padding: 15px 25px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(139, 26, 78, 0.08); border-left: 3px solid #F39C6B;">
+                            <div style="font-size: 1em; color: var(--secondary-color); font-weight: 600; margin-bottom: 6px;">
+                                Gaussian → Gaussian (Independent Coupling)
+                            </div>
+                            <div style="font-size: 0.95em; color: var(--text-color); line-height: 1.6;">
+                                The classifc flow matching paradigm where the target distribution (e.g., SD-VAE <a href="#references" class="cite">1</a> latent space) is unimodal Gaussian.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GMM to GMM -->
+                    <div style="margin-bottom: 45px;">
+                        <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px; box-shadow: var(--shadow); border-right: 4px solid #F39C6B;">
+                            <img src="assets/gmm-to-gmm.gif" alt="GMM to GMM" style="width: 100%; height: auto; border-radius: 8px;">
+                        </div>
+                        <div style="margin-top: 15px; padding: 15px 25px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(139, 26, 78, 0.08); border-left: 3px solid #F39C6B;">
+                            <div style="font-size: 1em; color: var(--secondary-color); font-weight: 600; margin-bottom: 6px;">
+                                GMM → GMM (Independent Coupling)
+                            </div>
+                            <div style="font-size: 0.95em; color: var(--text-color); line-height: 1.6;">
+                                Estimate a data-adaptive mixture source distribution from the multimodal target distribution as a warm start.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: GMM Source -->
+                <div>
+                    <!-- Gaussian to GMM -->
+                    <div style="margin-bottom: 45px;">
+                        <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px; box-shadow: var(--shadow); border-right: 4px solid #F39C6B;">
+                            <img src="assets/gaussian-to-gmm.gif" alt="Gaussian to GMM" style="width: 100%; height: auto; border-radius: 8px;">
+                        </div>
+                        <div style="margin-top: 15px; padding: 15px 25px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(139, 26, 78, 0.08); border-left: 3px solid #F39C6B;">
+                            <div style="font-size: 1em; color: var(--secondary-color); font-weight: 600; margin-bottom: 6px;">
+                                Gaussian → GMM (Independent Coupling)
+                            </div>
+                            <div style="font-size: 0.95em; color: var(--text-color); line-height: 1.6;">
+                                Paradigm shift to structured latent space (e.g., RAE <a href="#references" class="cite">2</a>, MAETok <a href="#references" class="cite">3</a>, SVGTok <a href="#references" class="cite">4</a>) that reduces the learning complexity.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MM-FM (Ours) -->
+                    <div style="margin-bottom: 45px;">
+                        <div style="background: var(--bg-secondary); padding: 15px; border-radius: 10px; box-shadow: var(--shadow); border-right: 4px solid var(--primary-dark);">
+                            <img src="assets/gmm-to-gmm-mode-coupling.gif" alt="MM-FM" style="width: 100%; height: auto; border-radius: 8px;">
+                        </div>
+                        <div style="margin-top: 15px; padding: 15px 25px; background: var(--bg-secondary); border-radius: 8px; box-shadow: 0 2px 8px rgba(139, 26, 78, 0.08); border-left: 3px solid var(--primary-dark);">
+                            <div style="font-size: 1em; color: var(--primary-dark); font-weight: 700; margin-bottom: 6px;">
+                                GMM → GMM (Mode Coupling)
+                            </div>
+                            <div style="font-size: 0.95em; color: var(--text-color); line-height: 1.6;">
+                                Co-design with mode-dependent coupling achieves shortest and straightest sampling trajectories.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Note -->
+            <div style="margin-top: 5px; padding: 15px 25px; background: var(--bg-secondary); border-radius: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary-dark);">
+                <span style="font-weight: 700; color: var(--primary-dark); font-size: 0.95em;">Remark:</span>
+                <span style="color: var(--text-color); font-size: 0.95em; margin-left: 8px;">These sampling trajectories in the animation are generated from pre-trained flow matching models on 2D simulation data. The training and sampling code are modified from <a href="https://github.com/helblazer811/Diffusion-Explorer" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Diffusion-Explorer</a> <a href="#references" class="cite">5</a>. The straightness of the sampling trajectories correlates with the level of crossing during training <a href="#references" class="cite">6</a><a href="#references" class="cite">7</a>. Our method reduces crossing and thus leads to straighter trajectories.</span>
+            </div>
+        </section>
+
+        <!-- Method -->
+        <section id="method">
+            <h2>Our Method (MM-FM)</h2>
+            <p>
+                MM-FM fits a Gaussian Mixture Model (GMM) on the target distribution \(p(Z_1)\) as the source distribution \(p(Z_0) = \sum_{i=1}^m c_i\mathcal{N}(\mu_i, \Sigma_i)\) and apply mode-dependent data coupling \(\pi_{\textrm{mode}}(Z_0, Z_1)=p(Z_1)p(Z_0 \mid Z_1)\) for training. To mitigate the concentration of measure and curse of dimensionality in high dimension, we propose a subroutine for image data to fit a GMM on [CLS] token in \(\mathbb{R}^{768}\) to obtain a operational GMM on patch tokens in \(\mathbb{R}^{768\times16\times16}\).
+            </p>
+
+            <!-- Training Pipeline Timeline -->
+            <div style="position: relative; margin: 40px 0;">
+                <!-- Timeline connector line -->
+                <div style="position: absolute; left: 30px; top: 60px; bottom: 20px; width: 4px; background: var(--primary-dark); border-radius: 2px; z-index: 1;"></div>
+                <!-- Arrow at bottom of timeline -->
+                <div style="position: absolute; left: 22px; bottom: 0; z-index: 3;">
+                    <div style="color: var(--primary-dark); font-size: 1.5em;">▼</div>
+                </div>
+
+                <!-- Stage 1: GMM Training -->
+                <div style="position: relative; padding-left: 80px; margin-bottom: 30px;">
+                    <!-- Stage indicator -->
+                    <div style="position: absolute; left: 10px; top: 20px; width: 44px; height: 44px; background: var(--primary-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2; box-shadow: var(--shadow);">
+                        <span style="color: white; font-weight: 700; font-size: 1.2em;">1</span>
+                    </div>
+                    <!-- Stage label -->
+                    <div style="margin-bottom: 15px;">
+                        <span style="background: var(--primary-dark); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95em;">Stage 1: GMM Pretraining</span>
+                    </div>
+                    <!-- Figure content -->
+                    <div class="figure" style="background: transparent; padding: 0; margin: 0;">
+                        <img src="assets/gmm-training.png" alt="GMM training process" style="width: 100%; max-width: 100%; height: auto;">
+                        <div class="figure-caption">
+                            <strong>Figure 2:</strong> The GMM training process on an image dataset using Expectation-Maximization (EM) algorithm on [CLS] tokens from DINOv2-B, and apply the cluster membership to estimate the mean and variance level of each cluster on patch tokens.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stage 2: Flow Matching Training -->
+                <div style="position: relative; padding-left: 80px;">
+                    <!-- Stage indicator -->
+                    <div style="position: absolute; left: 10px; top: 20px; width: 44px; height: 44px; background: var(--primary-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2; box-shadow: var(--shadow);">
+                        <span style="color: white; font-weight: 700; font-size: 1.2em;">2</span>
+                    </div>
+                    <!-- Stage label -->
+                    <div style="margin-bottom: 15px;">
+                        <span style="background: var(--primary-dark); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95em;">Stage 2: Flow Matching Training</span>
+                    </div>
+                    <!-- Figure content -->
+                    <div class="figure" style="background: transparent; padding: 0; margin: 0;">
+                        <img src="assets/fm-training.png" alt="Flow matching training process" style="width: 100%; max-width: 100%; height: auto;">
+                        <div class="figure-caption">
+                            <strong>Figure 3:</strong> The Flow Matching training process on the latent (patch tokens) by using pre-trained [CLS] GMM for mode assignment and sampling mode-dependent noise from its corresponding cluster.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Related Work Note -->
+            <div style="margin-top: 40px; padding: 20px 30px; background: var(--bg-secondary); border-radius: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary-dark);">
+                <span style="font-weight: 700; color: var(--primary-dark); font-size: 0.95em;">NOTE:</span>
+                <span style="color: var(--text-color); font-size: 0.95em; margin-left: 8px;">Several concurrent works (GMFlow<a href="#references" class="cite">18</a>, CondPrior<a href="#references" class="cite">19</a>, and MixSGM<a href="#references" class="cite">20</a>) explore similiar but different ideas. For detailed comparisons, we refer the curious readers to our paper.</span>
+            </div>
+        </section>
+
+        <!-- Results -->
+        <section id="experiments">
+            <h2>Experimental Results</h2>
+            <p>
+                On ImageNet256 dataset, without any conditioning (i.e., learning a purely unconditional velocity field), MM-FM (FID=3.82) without guidance outperforms the baseline using Gaussian source distribution and independent coupling (FID=9.33) on 80 epochs. It also outperforms the unconditional generation result (FID=4.96) with guidance on 200 epochs reported in RAE<a href="#references" class="cite">2</a>.
+            </p>
+            <p>
+                Comparing with unconditional generation systems (i.e., without using annotated class labels) without guidance, MM-FM with mode conditioning (FID=3.18) on 80 epochs outperforms DLC<a href="#references" class="cite">16</a> with DLC conditioning (FID=5.75) on 80 epochs and RCG<a href="#references" class="cite">15</a> with MoCov3 conditioning (FID=4.89) on 400 epochs.
+            </p>
+            <p>
+                Though not relying on annotated class labels, MM-FM delivers matching and superior performance comparing with class-conditioning systems (including E2E-VAE<a href="#references" class="cite">11</a>, VA-VAE<a href="#references" class="cite">12</a>, MAETok<a href="#references" class="cite">3</a>, AlignTok<a href="#references" class="cite">13</a>, VFM-VAE<a href="#references" class="cite">14</a>, and SVGTok<a href="#references" class="cite">4</a>) in early checkpoints.
+            </p>
+            <p>
+                With AutoGuidance<a href="#references" class="cite">17</a>, MM-FM trained for 80 epochs only without using annotated class labels achieves state-of-the-art FID=2.74 generation performance on ImageNet256.
+            </p>
+
+            <!-- Table Example -->
+            <div class="figure-caption" style="text-align: center; margin-bottom: 15px;">
+                <strong>Table 1:</strong> Comparison of different systems on ImageNet 256x256 generation without guidance.
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Tokenizer</th>
+                        <th>Epoch</th>
+                        <th>Params</th>
+                        <th>Prior</th>
+                        <th>Cond.</th>
+                        <th>FID</th>
+                        <th>IS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>LDM-8<a href="#references" class="cite">8</a></td>
+                        <td>LDM</td>
+                        <td>150</td>
+                        <td>395M</td>
+                        <td>Gaussian</td>
+                        <td>-</td>
+                        <td>39.13</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>DiT-XL</td>
+                        <td>SD-VAE</td>
+                        <td>400</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>-</td>
+                        <td>27.32</td>
+                        <td>35.9</td>
+                    </tr>
+                    <tr>
+                        <td>DiT-XL<a href="#references" class="cite">9</a></td>
+                        <td>SD-VAE</td>
+                        <td>80</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>Class</td>
+                        <td>19.50</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>SiT-XL<a href="#references" class="cite">10</a></td>
+                        <td>SD-VAE</td>
+                        <td>80</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>Class</td>
+                        <td>17.20</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>SiT-XL</td>
+                        <td>E2E-VAE<a href="#references" class="cite">11</a></td>
+                        <td>80</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>Class</td>
+                        <td>3.46</td>
+                        <td>159.8</td>
+                    </tr>
+                    <tr>
+                        <td>LightningDiT-XL</td>
+                        <td>VA-VAE<a href="#references" class="cite">12</a></td>
+                        <td>64</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>Class</td>
+                        <td>5.14</td>
+                        <td>130.2</td>
+                    </tr>
+                    <tr>
+                        <td>LightningDiT-XL</td>
+                        <td>MAETok <a href="#references" class="cite">3</a></td>
+                        <td>64</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>Class</td>
+                        <td>5.36</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>LightningDiT-XL</td>
+                        <td>AlignTok<a href="#references" class="cite">13</a></td>
+                        <td>64</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>Class</td>
+                        <td>3.71</td>
+                        <td>148.9</td>
+                    </tr>
+                    <tr>
+                        <td>LightningDiT-XL</td>
+                        <td>VFM-VAE<a href="#references" class="cite">14</a></td>
+                        <td>80</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>Class</td>
+                        <td>3.41</td>
+                        <td>160.4</td>
+                    </tr>
+                    <tr>
+                        <td>SVG-XL</td>
+                        <td>SVGTok <a href="#references" class="cite">4</a></td>
+                        <td>80</td>
+                        <td>675M</td>
+                        <td>Gaussian</td>
+                        <td>Class</td>
+                        <td>6.57</td>
+                        <td>137.9</td>
+                    </tr>
+                    <tr>
+                        <td>DiT-XL + RCG<a href="#references" class="cite">15</a></td>
+                        <td>SD-VAE</td>
+                        <td>400</td>
+                        <td>738M</td>
+                        <td>Gaussian</td>
+                        <td>MoCov3</td>
+                        <td>4.89</td>
+                        <td>143.2</td>
+                    </tr>
+                    <tr>
+                        <td>DiT-XL + DLC<sub>512</sub><a href="#references" class="cite">16</a></td>
+                        <td>SD-VAE</td>
+                        <td>80</td>
+                        <td>825M</td>
+                        <td>Gaussian</td>
+                        <td>DLC<sub>512</sub></td>
+                        <td>5.75</td>
+                        <td>-</td>
+                    </tr>
+                    <tr>
+                        <td>DiT<sup>DH</sup>-XL<a href="#references" class="cite">2</a></td>
+                        <td>DINOv2-B</td>
+                        <td>80</td>
+                        <td>839M</td>
+                        <td>GMM</td>
+                        <td>-</td>
+                        <td>9.33</td>
+                        <td>90.6</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DiT<sup>DH</sup>-XL + MM-FM</strong></td>
+                        <td><strong>DINOv2-B</strong></td>
+                        <td><strong>80</strong></td>
+                        <td><strong>839M</strong></td>
+                        <td><strong>GMM</strong></td>
+                        <td><strong>-</strong></td>
+                        <td><strong>3.82</strong></td>
+                        <td><strong>192.3</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>DiT<sup>DH</sup>-XL + MM-FM</strong></td>
+                        <td><strong>DINOv2-B</strong></td>
+                        <td><strong>80</strong></td>
+                        <td><strong>839M</strong></td>
+                        <td><strong>GMM</strong></td>
+                        <td><strong>Mode</strong></td>
+                        <td><strong>3.18</strong></td>
+                        <td><strong>211.2</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- FID vs ODE Steps Figure with Text Wrap -->
+            <div style="margin-top: 30px; overflow: auto;">
+                <div style="float: right; width: 50%; margin-left: 25px; margin-bottom: 15px;">
+                    <img src="assets/fid-ode-steps.svg" alt="FID vs ODE Steps" style="width: 100%; height: auto; border-radius: 8px; box-shadow: var(--shadow);">
+                    <div style="font-size: 0.9em; color: var(--text-light); font-style: italic; margin-top: 10px; text-align: center;">
+                        <strong>Figure 4:</strong> FID vs. number of ODE steps for sampling (80 epochs).
+                    </div>
+                </div>
+                <p>
+                    Besides training efficiency, MM-FM achieves inference efficiency due to reduced crossing of flows during training time. As a result, it has straighter sampling trajectories and thus requires fewer Euler steps of an ODE sampler. The figure 4 shows that MM-FM requires approxiamtely 5x fewer steps to achieve comparable generation quality relative to Gaussian source distribution with independent coupling.
+                </p>
+            </div>
+
+            <h3 style="margin-top: 5px;">Ablation Study of GMM Parameters</h3>
+
+            <!-- Ablation Figure and Table -->
+            <div style="margin-top: 30px; overflow: auto;">
+                <div style="float: left; width: 42%; margin-right: 20px; margin-bottom: 15px;">
+                    <img src="assets/ablation-modes.svg" alt="Ablation study on number of GMM modes" style="width: 100%; height: auto; border-radius: 8px; box-shadow: var(--shadow);">
+                    <div style="font-size: 0.9em; color: var(--text-light); font-style: italic; margin-top: 10px; text-align: center;">
+                        <strong>Figure 5:</strong> Ablation on # GMM modes (spherical covariance type, soft assignment without mode conditioning).
+                    </div>
+                </div>
+                <div style="float: right; width: 54%;">
+                    <div class="figure-caption" style="text-align: center; margin-bottom: 15px;">
+                        <strong>Table 2:</strong> Ablation study of covariance and assignment types (# mode=64, 20 epochs, with mode conditioning).
+                    </div>
+                    <table style="width: 100%; margin: 0; border: 1px solid var(--primary-dark);">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; border: 1px solid rgba(255,255,255,0.3);">FID-50K ↓</th>
+                                <th colspan="3" style="border: 1px solid rgba(255,255,255,0.3); border-right: 2px solid white;">Soft Assignment</th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);">Hard Assignment</th>
+                            </tr>
+                            <tr>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);"></th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);">Spherical</th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);">Diagonal</th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3); border-right: 2px solid white;">Full</th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);">Diagonal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border: 1px solid var(--border-color);"></td>
+                                <td style="border: 1px solid var(--border-color);">11.09</td>
+                                <td style="border: 1px solid var(--border-color);"><strong>10.44</strong></td>
+                                <td style="border: 1px solid var(--border-color); border-right: 2px solid var(--primary-dark);">10.11</td>
+                                <td style="border: 1px solid var(--border-color);">10.67</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div style="clear: both; margin-top: 30px;">
+                <p>
+                    Figure 5 shows MM-FM regardless the # modes perform strictly better than Gaussian with independent coupling. The improvement is monotonic with respect to increasing number of modes toward the degree of reasonable GMM estimation with sufficient data points per mode. Interestingly, the optimal # modes isn't 1000, suggesting that the underlying data manifold contains richer intrinsic structure beyond the categorization provided by annotated labels, which MM-FM can effectively capture. More importantly, class labels are not always available for image datasets. Table 2 shows that the choice of covariance and assignment type only brings marginally affect the performance relative to the gain by tuning # modes.
+                </p>
+            </div>
+
+            <h3 style="margin-top: 5px;">Data Efficiency</h3>
+
+            <!-- Data Efficiency Table and Text -->
+            <div style="margin-top: 30px; overflow: auto;">
+                <div style="float: left; width: 50%; margin-right: 25px; margin-bottom: 15px;">
+                    <div class="figure-caption" style="text-align: center; margin-bottom: 15px;">
+                        <strong>Table 3:</strong> Training GMM and DiT<sup>DH</sup>-S on stratified 10% of ImageNet256 with 8192 modes and spherical covariance without mode conditioning.
+                    </div>
+                    <table style="width: 100%; margin: 0; border: 1px solid var(--primary-dark);">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; border: 1px solid rgba(255,255,255,0.3);">FID-50K ↓</th>
+                                <th colspan="2" style="border: 1px solid rgba(255,255,255,0.3); border-right: 2px solid white;">400 Epochs</th>
+                                <th colspan="2" style="border: 1px solid rgba(255,255,255,0.3);">800 Epochs</th>
+                            </tr>
+                            <tr>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);"></th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);">Baseline</th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3); border-right: 2px solid white;">MM-FM</th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);">Baseline</th>
+                                <th style="border: 1px solid rgba(255,255,255,0.3);">MM-FM</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border: 1px solid var(--border-color);"></td>
+                                <td style="border: 1px solid var(--border-color);">24.65</td>
+                                <td style="border: 1px solid var(--border-color); border-right: 2px solid var(--primary-dark);"><strong>8.04</strong></td>
+                                <td style="border: 1px solid var(--border-color);">24.33</td>
+                                <td style="border: 1px solid var(--border-color);"><strong>7.48</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="float: right; width: 45%;">
+                    <p style="margin-top: 0;">
+                        We evaluate MM-FM in a data-scarce regime by training on only 10% of ImageNet256 (stratified sampling). Table 3 demonstrates that MM-FM achieves substantially better performance than the baseline with Gaussian source distribution and independent coupling, when both models are trained to convergence (800 epochs).
+                    </p>
+                    <p>
+                        Our MM-FM lowers the learning complexity and thus reduce the demand of training data volume. The visual examples are in Figure 6.
+                    </p>
+                </div>
+            </div>
+
+            <div style="clear: both;"></div>
+
+            <!-- Data Efficiency Visualization -->
+            <div class="figure" style="background: transparent; padding: 0; margin-top: 40px;">
+                <img src="assets/method-comparison-pct10.jpg" alt="Method comparison on 10% ImageNet" style="width: 100%; max-width: 100%; height: auto;">
+                <div class="figure-caption">
+                    <strong>Figure 6:</strong> The qualitative comparison of unconditional generation (50 ODE steps) without guidance between baseline and MM-FM (without mode conditioning) on 10% ImageNet256 trained for 800 epochs using DiT<sup>DH</sup>-S. (a) FID=24.33 (b) FID=7.48
+                </div>
+            </div>
+        </section>
+
+        <!-- Theory -->
+        <section id="theory">
+            <h2>Main Theoretical Results</h2>
+
+            <p>
+                We analyze multimodal generation with matched mixture distributions:
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 25px 0;">
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: 10px; border-left: 4px solid var(--primary-dark);">
+                    <div style="font-weight: 600; color: var(--primary-dark); margin-bottom: 12px; font-size: 1.05em;">Target Distribution</div>
+                    <div style="font-size: 0.9em; overflow-x: auto;">
+                        \[q(z) = \sum_{k=1}^{m} c_k \tilde{q}(\Sigma_k^{-1/2}(z-\mu_k))\]
+                    </div>
+                </div>
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: 10px; border-left: 4px solid var(--primary-dark);">
+                    <div style="font-weight: 600; color: var(--primary-dark); margin-bottom: 12px; font-size: 1.05em;">Source Distribution (Ours)</div>
+                    <div style="font-size: 0.9em; overflow-x: auto;">
+                        \[p(z) = \sum_{k=1}^{m} c_k \tilde{p}(\Sigma_k^{-1/2}(z-\mu_k))\]
+                    </div>
+                </div>
+            </div>
+
+            <p>
+                Here \(\tilde{q}\) and \(\tilde{p}\) are unimodal base distributions (e.g., standard Gaussians), and the mixtures are formed by placing transformed copies at locations \(\mu_k\) with covariances \(\Sigma_k\). Both \(p\) and \(q\) share the same parameters \(\{\mu_k,\Sigma_k\}_{k=1}^{m}\).
+            </p>
+
+            <p style="margin-top: 15px;">
+                We compare two coupling strategies: <strong>mode coupling</strong> \(\pi_{\text{mode}}\) (our approach, where each source mode \(p_k\) flows only to the corresponding target mode \(q_k\)) vs. <strong>independent coupling</strong> \(\pi_{\text{ind}}\) (standard approach, where source and target are sampled independently). We measure generation complexity by:
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 25px 0;">
+                <div style="padding: 18px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--primary-dark); min-height: 20px; display: flex; flex-direction: column;">
+                    <div style="font-weight: 600; color: var(--primary-dark); margin-bottom: 8px;">Straightness</div>
+                    <div style="font-size: 0.8em; flex: 1; display: flex; align-items: center; justify-content: center;">
+                        \[\mathbb{E}[\int_0^1 \|u_t(Z_t)\|^2 dt - \|\int_0^1 u_t(Z_t) dt\|^2]\]
+                    </div>
+                </div>
+                <div style="padding: 18px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--primary-dark); min-height: 20px; display: flex; flex-direction: column;">
+                    <div style="font-weight: 600; color: var(--primary-dark); margin-bottom: 8px;">Total Length</div>
+                    <div style="font-size: 0.8em; flex: 1; display: flex; align-items: center; justify-content: center;">
+                        \[\mathbb{E}[\int_0^1 \|u_t(Z_t)\| dt]\]
+                    </div>
+                </div>
+                <div style="padding: 18px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--primary-dark); min-height: 20px; display: flex; flex-direction: column;">
+                    <div style="font-weight: 600; color: var(--primary-dark); margin-bottom: 8px;">Lipschitz Constant</div>
+                    <div style="font-size: 0.8em; flex: 1; display: flex; align-items: center; justify-content: center;">
+                        \[\sup_z \|\nabla u_t(z)\|_{\text{op}}\]
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assumption Box -->
+            <div style="background: var(--bg-secondary); padding: 20px 25px; border-radius: 10px; margin: 25px 0; box-shadow: var(--shadow); border-left: 4px solid var(--primary-dark);">
+                <h4 style="color: var(--primary-dark); margin-bottom: 12px; font-size: 1.1em;">Assumption 1</h4>
+                <ol style="font-size: 0.95em; line-height: 1.8; margin: 0; padding-left: 20px;">
+                    <li style="margin-bottom: 10px;">The support \(\Omega\) of \(\tilde{p}\) and \(\tilde{q}\) is bounded and convex, and its affine images \(\{\Omega_k\}_{k \in [m]}\) are mutually disjoint. For every pair \(j,k \in [m]\) with \(j \neq k\) and every \(z \in \Omega_k\):
+                        <div style="margin: 5px 0; overflow-x: auto;">
+                            \[
+                            \|z-\mu_k\|_{\Sigma_k^{-1/2}} < \text{dist}_{\Sigma_j^{-1/2}}(z,\Omega_j)
+                            \]
+                        </div>
+                    </li>
+                    <li>The velocity field \(\tilde{u}_t\) bridging \(\tilde{p}\) and \(\tilde{q}\) is Lipschitz continuous for every \(t \in (0,1)\), and its Jacobian is defined globally in \(\Omega\).</li>
+                </ol>
+            </div>
+
+            <!-- Main Theorem Box -->
+            <div style="background: var(--bg-secondary); padding: 25px; border-radius: 12px; margin: 30px 0; box-shadow: var(--shadow-hover); border-left: 5px solid var(--primary-dark);">
+                <h4 style="color: var(--primary-dark); margin-bottom: 15px; font-size: 1.3em; font-weight: 700;">Theorem 1</h4>
+                <p style="margin-bottom: 15px;">Under Assumption 1, with multimodal prior \(p\) and mode coupling \(\pi_{\text{mode}}\):</p>
+                <ol style="line-height: 2;">
+                    <li style="margin-bottom: 15px;">
+                        \[
+                        \text{Straightness}(p,q;\pi_{\text{mode}}) \leq C \cdot \text{Straightness}(\tilde{p},\tilde{q};\pi_{\text{ind}}),
+                        \]
+                        where \(C := \sum_{k=1}^{m} c_k \|\Sigma_k\|_{\text{op}} \leq 1\).
+                    </li>
+                    <li style="margin-bottom: 15px;">
+                        \[
+                        \text{Length}(p,q;\pi_{\text{mode}}) \leq \left(\sum_{k=1}^{m} c_k \|\Sigma_k\|^{1/2}_{\text{op}}\right) \cdot \text{Length}(\tilde{p},\tilde{q};\pi_{\text{ind}})
+                        \]
+                    </li>
+                    <li>
+                        \[
+                        \text{Lip}(u_t) \leq \text{Lip}(\tilde{u}_t), \quad \forall t \in (0,1)
+                        \]
+                    </li>
+                </ol>
+                <p style="margin-top: 15px; font-size: 0.95em; line-height: 1.7; color: var(--text-color);">
+                    <strong>Interpretation:</strong> When using the multimodal prior and the mode coupling, the straightness, total length, and velocity field Lipschitz constant of the multimodal generation problem <em>never exceed that of the unimodal generation problem</em>.
+                </p>
+            </div>
+
+            <p style="text-align: center; margin-top: 30px; font-size: 0.95em; color: var(--text-light); font-style: italic;">
+                For additional theoretical results and complete proofs, please refer to our paper.
+            </p>
+        </section>
+
+        <!-- Conclusion -->
+        <section id="conclusion">
+            <h2>Conclusion</h2>
+            <p>
+                We propose MM-FM, a co-design of a multimodal source distribution and mode coupling that exploits structured latent space imposed by foundation models. It delivers faster convergence and superior generation performance compared to the classifc flow matching recipe that stays on unimodal Gaussian and independent coupling. We wish it provides a principled flow design for the co-evolution of foundation models and generative models. As more foundation models emerges across domains, training flow-based generative models can be made efficient by MM-FM.
+            </p>
+            <p>
+                For curious readers, we recommend <a href="https://neurips.cc/virtual/2024/tutorial/99531" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Flow Matching Tutorial Guide</a> and <a href="https://rectifiedflow.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Rectified Flow Tutorial</a> for flow matching basics. For the insights into structured latents and training efficiency of flow-based models, we also recommend <a href="https://howlin-wang.github.io/svg" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">SVG</a> and <a href="https://rae-dit.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">RAE</a>'s project page.
+            </p>
+        </section>
+
+        <!-- Citation -->
+        <section id="citation">
+            <h2>Citation</h2>
+            <p>If you find this work useful, please consider citing:</p>
+            <div class="bibtex-container">
+                <button class="copy-button" onclick="copyBibtex()">Copy</button>
+                <div class="bibtex" id="bibtex">@misc{mm-fm,
+    title={Flow Matching for Multimodal Distributions}, 
+    author={Gaoxiang Luo and Frank Cole and Sihang Zhang and Yuxiang Wan and Yulong Lu and Ju Sun},
+    year={2025},
+    eprint={xxxx.xxxxx},
+    archivePrefix={arXiv},
+    primaryClass={cs.CV},
+    url={https://arxiv.org/abs/xxxx.xxxxx},
+}</div>
+            </div>
+        </section>
+
+        <!-- References -->
+        <section id="references">
+            <h2>References</h2>
+            <ol class="references">
+                <li id="ref1">
+                    Esser et al. "Scaling rectified flow transformers for high-resolution image synthesis." <em>ICML'24</em>.
+                    <a href="https://dl.acm.org/doi/10.5555/3692070.3692573" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref2">
+                    Zheng et al. "Diffusion Transformers with Representation Autoencoders." <em>arXiv</em>.
+                    <a href="https://rae-dit.github.io" target="_blank">[Project Page]</a>
+                </li>
+                <li id="ref3">
+                    Chen et al. "Masked Autoencoders Are Effective Tokenizers for Diffusion Models." <em>ICML'25</em>.
+                    <a href="https://arxiv.org/abs/2502.03444" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref4">
+                    Shi et al. "Latent Diffusion Model without Variational Autoencoder." <em>arXiv</em>.
+                    <a href="https://howlin-wang.github.io/svg" target="_blank">[Project Page]</a>
+                </li>
+                <li id="ref5">
+                    Helbling, et al. "Diffusion Explorer: Interactive Exploration of Diffusion Models." <em>IEEE VIS'25</em>.
+                    <a href="https://alechelbling.com/Diffusion-Explorer/" target="_blank">[Demo]</a>
+                </li>
+                <li id="ref6">
+                    Liu et al. "Flow Straight and Fast: Learning to Generate and Transfer Data with Rectified Flow." <em>ICLR'23</em>.
+                    <a href="https://rectifiedflow.github.io/blog/2024/intro" target="_blank">[Tutorial]</a>
+                </li>
+                <li id="ref7">
+                    Lee et al. "Minimizing trajectory curvature of ode-based generative models." <em>ICML'23</em>.
+                    <a href="https://arxiv.org/abs/2301.12003" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref8">
+                    Rombach et al. "High-Resolution Image Synthesis with Latent Diffusion Models." <em>CVPR'22</em>.
+                    <a href="https://arxiv.org/abs/2112.10752" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref9">
+                    Peebles et al. "Scalable Diffusion Models with Transformers." <em>ICCV'23</em>.
+                    <a href="https://www.wpeebles.com/DiT" target="_blank">[Project Page]</a>
+                </li>
+                <li id="ref10">
+                    Ma et al. "SiT: Exploring Flow and Diffusion-based Generative Models with Scalable Interpolant Transformers." <em>ECCV'24</em>.
+                    <a href="https://scalable-interpolant.github.io" target="_blank">[Project Page]</a>
+                </li>
+                <li id="ref11">
+                    Leng et al. "REPA-E: Unlocking VAE for End-to-End Tuning of Latent Diffusion Transformers." <em>ICCV'25</em>.
+                    <a href="https://end2end-diffusion.github.io" target="_blank">[Project Page]</a>
+                </li>
+                <li id="ref12">
+                    Yao et al. "Reconstruction vs. Generation: Taming Optimization Dilemma in Latent Diffusion Models." <em>CVPR'25</em>.
+                    <a href="https://arxiv.org/abs/2501.01423" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref13">
+                    Chen et al. "Aligning Visual Foundation Encoders to Tokenizers for Diffusion Models." <em>arXiv</em>.
+                    <a href="https://aligntok.github.io" target="_blank">[Project Page]</a>
+                </li>
+                <li id="ref14">
+                    Bi et al. "Vision Foundation Models Can Be Good Tokenizers for Latent Diffusion Models." <em>arXiv</em>.
+                    <a href="https://arxiv.org/abs/2510.18457" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref15">
+                    Li et al. "Return of Unconditional Generation: A Self-supervised Representation Generation Method." <em>NeurIPS'24</em>.
+                    <a href="https://arxiv.org/abs/2312.03701" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref16">
+                    Lavoie et al. "Compositional Discrete Latent Code for High Fidelity, Productive Diffusion Models." <em>NeurIPS'25</em>.
+                    <a href="https://arxiv.org/abs/2507.12318" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref17">
+                    Karras et al. "Guiding a Diffusion Model with a Bad Version of Itself." <em>NeurIPS'24</em>.
+                    <a href="https://arxiv.org/abs/2406.02507" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref18">
+                    Issachar et al. "Designing a Conditional Prior Distribution for Flow-Based Generative Models." <em>arXiv</em>.
+                    <a href="https://arxiv.org/abs/2502.09611" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref19">
+                    Jia et al. "Structured Diffusion Models with Mixture of Gaussians as Prior Distribution." <em>arXiv</em>.
+                    <a href="https://arxiv.org/abs/2410.19149" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref20">
+                    Chen et al. "Gaussian Mixture Flow Matching Models." <em>ICML'25</em>.
+                    <a href="https://arxiv.org/abs/2504.05304" target="_blank">[Paper]</a>
+                </li>
+            </ol>
+        </section>
+    </div>
+
+    <!-- Mobile TOC Toggle -->
+    <button class="toc-toggle" onclick="toggleTOC()">☰</button>
+
+    <script>
+        // Progress bar
+        window.addEventListener('scroll', () => {
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.scrollHeight - windowHeight;
+            const scrolled = window.scrollY;
+            const progress = (scrolled / documentHeight) * 100;
+            document.getElementById('progressBar').style.width = progress + '%';
+        });
+
+        // Active section highlighting in TOC
+        const sections = document.querySelectorAll('section');
+        const tocLinks = document.querySelectorAll('.toc-sidebar a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (scrollY >= sectionTop - 100) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            tocLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').slice(1) === current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Mobile TOC toggle
+        function toggleTOC() {
+            const toc = document.getElementById('tocSidebar');
+            if (toc.style.display === 'block') {
+                toc.style.display = 'none';
+            } else {
+                toc.style.display = 'block';
+            }
+        }
+
+        // Copy BibTeX to clipboard
+        function copyBibtex() {
+            const bibtexElement = document.getElementById('bibtex');
+            const bibtexText = bibtexElement.textContent;
+            const button = event.target;
+
+            navigator.clipboard.writeText(bibtexText).then(() => {
+                // Change button text and style
+                button.textContent = 'Copied!';
+                button.classList.add('copied');
+
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                    button.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        }
+    </script>
+</body>
+</html>
