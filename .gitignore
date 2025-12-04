@@ -1,0 +1,5 @@
+# SvelteKit source (only commit the built demo/)
+flow-lab/
+
+# OS files
+.DS_Store
