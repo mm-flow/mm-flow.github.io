@@ -123,7 +123,7 @@
 
         /* Main Container */
         .container {
-            max-width: 1000px;
+            max-width: 1040px;
             margin: 0 auto;
             padding: 60px 40px;
             margin-left: 260px;
@@ -336,6 +336,7 @@
             color: var(--text-light);
             font-style: italic;
             line-height: 1.6;
+            text-align: left;
         }
 
         /* Tables */
@@ -597,8 +598,8 @@
     <aside class="toc-sidebar" id="tocSidebar">
         <div class="toc-title">Contents</div>
         <ul>
-            <li><a href="#abstract">Abstract</a></li>
-            <li><a href="#introduction">Introduction</a></li>
+            <li><a href="#tldr">TL;DR</a></li>
+            <li><a href="#motivation">Motivation</a></li>
             <li><a href="#method">Method</a></li>
             <li><a href="#experiments">Experiments</a></li>
             <li><a href="#theory">Theory</a></li>
@@ -633,6 +634,8 @@
                 <span class="affiliation"><sup>3</sup>School of Statistics</span>
                 <br>
                 <span class="affiliation">University of Minnesota Twin Cities</span>
+                <br>
+                <span style="display: inline-block; margin-top: 14px; font-weight: 700; font-size: 1.6em; letter-spacing: 3px; background: linear-gradient(135deg, var(--gradient-start), var(--gradient-mid), var(--gradient-end)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">CVPR 2026</span>
             </div>
 
             <!-- Resource Links -->
@@ -644,19 +647,19 @@
         </div>
 
         <!-- Teaser Figure -->
-        <div class="figure" style="background: transparent; padding: 0;">
+        <div id="tldr" class="figure" style="background: transparent; padding: 0;">
             <img src="assets/teaser.svg" alt="Teaser figure" style="width: 100%; max-width: 100%; height: auto;">
             <div class="figure-caption" style="margin-top: 15px;">
                 <strong>Figure 1:</strong> Overview of Mixture-Modeling Flow Matching (MM-FM).
             </div>
             <div style="margin-top: 15px; padding: 20px 30px; background: var(--bg-secondary); border-radius: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary-dark);">
                 <span style="font-weight: 700; color: var(--primary-dark); font-size: 1em;">TL;DR:</span>
-                <span style="color: var(--text-color); font-size: 1em; margin-left: 8px;">(a) Mixture source distribution (e.g., GMM) and mode-dependent data coupling co-design (b) for multimodal target distribution (e.g., foundation model as visual tokenizers) (c) for <strong>efficient</strong> flow matching.</span>
+                <span style="color: var(--text-color); font-size: 1em; margin-left: 8px;">(a) Mixture source distribution (e.g., GMM) and mode-dependent data coupling co-design (b) for multimodal target distribution (e.g., foundation model as visual tokenizers) (c) for <strong>[training,inference,data]-efficient</strong> flow matching.</span>
             </div>
         </div>
 
         <!-- Motivation Progression -->
-        <section style="margin-top: 40px; margin-bottom: 50px;">
+        <section id="motivation" style="margin-top: 40px; margin-bottom: 50px;">
             <h2 style="margin-bottom: 30px;">Motivation</h2>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 20px;">
@@ -672,7 +675,7 @@
                                 Gaussian → Gaussian (Independent Coupling)
                             </div>
                             <div style="font-size: 0.95em; color: var(--text-color); line-height: 1.6;">
-                                The classifc flow matching paradigm where the target distribution (e.g., SD-VAE <a href="#references" class="cite">1</a> latent space) is unimodal Gaussian.
+                                The classic flow matching paradigm where the target distribution (e.g., SD-VAE <a href="#references" class="cite">1</a> latent space) is unimodal Gaussian.
                             </div>
                         </div>
                     </div>
@@ -705,7 +708,7 @@
                                 Gaussian → GMM (Independent Coupling)
                             </div>
                             <div style="font-size: 0.95em; color: var(--text-color); line-height: 1.6;">
-                                Paradigm shift to structured latent space (e.g., RAE <a href="#references" class="cite">2</a>, MAETok <a href="#references" class="cite">3</a>, SVGTok <a href="#references" class="cite">4</a>) that reduces the learning complexity.
+                                Paradigm shift to structured latent space (e.g., RAE <a href="#references" class="cite">2</a>, MAETok <a href="#references" class="cite">3</a>, SVGTok <a href="#references" class="cite">4</a>) that reduces the learning difficulty.
                             </div>
                         </div>
                     </div>
@@ -748,7 +751,7 @@
         <section id="method">
             <h2>Our Method (MM-FM)</h2>
             <p>
-                MM-FM fits a Gaussian Mixture Model (GMM) on the target distribution \(p(Z_1)\) as the source distribution \(p(Z_0) = \sum_{i=1}^m c_i\mathcal{N}(\mu_i, \Sigma_i)\) and apply mode-dependent data coupling \(\pi_{\textrm{mode}}(Z_0, Z_1)=p(Z_1)p(Z_0 \mid Z_1)\) for training. To mitigate the concentration of measure and curse of dimensionality in high dimension, we propose a subroutine for image data to fit a GMM on [CLS] token in \(\mathbb{R}^{768}\) to obtain a operational GMM on patch tokens in \(\mathbb{R}^{768\times16\times16}\).
+                Our algorithm optimizes training efficiency by reducing learning difficulty through three key ideas: (1) employing a vision foundation model (DINOv2-B) as the visual tokenizer to reveal the union-of-manifold structure<a href="#references" class="cite">21</a> of the data; (2) fitting a GMM to the multimodal target distribution as a warm-start source distribution \(p = \sum_{i=1}^m c_i\mathcal{N}(\mu_i, \Sigma_i)\); and (3) designing a <em>mode coupling</em> \(\pi_{\textrm{mode}}(z_0 \mid z_1)\) that pairs each target sample with a source sample drawn from the nearest GMM mode, enabling local transport of probability mass.
             </p>
 
             <!-- Training Pipeline Timeline -->
@@ -760,7 +763,7 @@
                     <div style="color: var(--primary-dark); font-size: 1.5em;">▼</div>
                 </div>
 
-                <!-- Stage 1: GMM Training -->
+                <!-- Stage 1: GMM Fitting -->
                 <div style="position: relative; padding-left: 80px; margin-bottom: 30px;">
                     <!-- Stage indicator -->
                     <div style="position: absolute; left: 10px; top: 20px; width: 44px; height: 44px; background: var(--primary-dark); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 2; box-shadow: var(--shadow);">
@@ -768,13 +771,13 @@
                     </div>
                     <!-- Stage label -->
                     <div style="margin-bottom: 15px;">
-                        <span style="background: var(--primary-dark); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95em;">Stage 1: GMM Pretraining</span>
+                        <span style="background: var(--primary-dark); color: white; padding: 6px 16px; border-radius: 20px; font-weight: 600; font-size: 0.95em;">Stage 1: GMM Fitting</span>
                     </div>
                     <!-- Figure content -->
                     <div class="figure" style="background: transparent; padding: 0; margin: 0;">
-                        <img src="assets/gmm-training.png" alt="GMM training process" style="width: 100%; max-width: 100%; height: auto;">
+                        <img src="assets/gmm-training.png" alt="GMM fitting process" style="width: 100%; max-width: 100%; height: auto;">
                         <div class="figure-caption">
-                            <strong>Figure 2:</strong> The GMM training process on an image dataset using Expectation-Maximization (EM) algorithm on [CLS] tokens from DINOv2-B, and apply the cluster membership to estimate the mean and variance level of each cluster on patch tokens.
+                            <strong>Figure 2:</strong> Fit a GMM to the foundation model encoded latents using EM on [CLS] tokens from DINOv2-B, then apply cluster membership to estimate the mean and covariance of each cluster on patch tokens (latents).
                         </div>
                     </div>
                 </div>
@@ -793,7 +796,7 @@
                     <div class="figure" style="background: transparent; padding: 0; margin: 0;">
                         <img src="assets/fm-training.png" alt="Flow matching training process" style="width: 100%; max-width: 100%; height: auto;">
                         <div class="figure-caption">
-                            <strong>Figure 3:</strong> The Flow Matching training process on the latent (patch tokens) by using pre-trained [CLS] GMM for mode assignment and sampling mode-dependent noise from its corresponding cluster.
+                            <strong>Figure 3:</strong> The Flow Matching training process on the latent (patch tokens) by using pre-trained [CLS] GMM for mode assignment and sampling mode-dependent noise.
                         </div>
                     </div>
                 </div>
@@ -802,7 +805,7 @@
             <!-- Related Work Note -->
             <div style="margin-top: 40px; padding: 20px 30px; background: var(--bg-secondary); border-radius: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary-dark);">
                 <span style="font-weight: 700; color: var(--primary-dark); font-size: 0.95em;">NOTE:</span>
-                <span style="color: var(--text-color); font-size: 0.95em; margin-left: 8px;">Several concurrent works (GMFlow<a href="#references" class="cite">18</a>, CondPrior<a href="#references" class="cite">19</a>, and MixSGM<a href="#references" class="cite">20</a>) explore similiar but different ideas. For detailed comparisons, we refer the curious readers to our paper.</span>
+                <span style="color: var(--text-color); font-size: 0.95em; margin-left: 8px;">Several concurrent works (CondPrior<a href="#references" class="cite">19</a>, MixSGM<a href="#references" class="cite">20</a>, and GMFlow<a href="#references" class="cite">18</a>) explore similar but different ideas. For detailed comparisons, we refer the curious readers to our paper.</span>
             </div>
         </section>
 
@@ -823,7 +826,7 @@
             </p>
 
             <!-- Table Example -->
-            <div class="figure-caption" style="text-align: center; margin-bottom: 15px;">
+            <div class="figure-caption" style="margin-bottom: 15px;">
                 <strong>Table 1:</strong> Comparison of different systems on ImageNet 256x256 generation without guidance.
             </div>
             <table>
@@ -960,7 +963,7 @@
                         <td>5.75</td>
                         <td>-</td>
                     </tr>
-                    <tr>
+                    <tr style="border-top: 2px solid var(--primary-dark);">
                         <td>DiT<sup>DH</sup>-XL<a href="#references" class="cite">2</a></td>
                         <td>DINOv2-B</td>
                         <td>80</td>
@@ -1002,7 +1005,7 @@
                     </div>
                 </div>
                 <p>
-                    Besides training efficiency, MM-FM achieves inference efficiency due to reduced crossing of flows during training time. As a result, it has straighter sampling trajectories and thus requires fewer Euler steps of an ODE sampler. The figure 4 shows that MM-FM requires approxiamtely 5x fewer steps to achieve comparable generation quality relative to Gaussian source distribution with independent coupling.
+                    Besides training efficiency, MM-FM achieves <strong>inference efficiency</strong> due to reduced crossing of flows during training time. As a result, it has straighter sampling trajectories and thus requires fewer Euler steps of an ODE sampler. Figure 4 shows that MM-FM requires approximately 5x fewer steps to achieve comparable generation quality relative to Gaussian source distribution with independent coupling.
                 </p>
             </div>
 
@@ -1017,7 +1020,7 @@
                     </div>
                 </div>
                 <div style="float: right; width: 54%;">
-                    <div class="figure-caption" style="text-align: center; margin-bottom: 15px;">
+                    <div class="figure-caption" style="margin-bottom: 15px;">
                         <strong>Table 2:</strong> Ablation study of covariance and assignment types (# mode=64, 20 epochs, with mode conditioning).
                     </div>
                     <table style="width: 100%; margin: 0; border: 1px solid var(--primary-dark);">
@@ -1050,7 +1053,7 @@
 
             <div style="clear: both; margin-top: 30px;">
                 <p>
-                    Figure 5 shows MM-FM regardless the # modes perform strictly better than Gaussian with independent coupling. The improvement is monotonic with respect to increasing number of modes toward the degree of reasonable GMM estimation with sufficient data points per mode. Interestingly, the optimal # modes isn't 1000, suggesting that the underlying data manifold contains richer intrinsic structure beyond the categorization provided by annotated labels, which MM-FM can effectively capture. More importantly, class labels are not always available for image datasets. Table 2 shows that the choice of covariance and assignment type only brings marginally affect the performance relative to the gain by tuning # modes.
+                    Figure 5 shows MM-FM regardless the # modes perform strictly better than Gaussian with independent coupling. The improvement is monotonic with respect to increasing number of modes toward the degree of reasonable GMM estimation with sufficient data points per mode. Interestingly, the optimal # modes isn't 1000, suggesting that the underlying data manifold contains richer intrinsic structure beyond the categorization provided by annotated labels, which MM-FM can effectively capture. More importantly, class labels are not always available for image datasets. Table 2 shows that the choice of covariance and assignment type only marginally affects the performance relative to the gain by tuning # modes.
                 </p>
             </div>
 
@@ -1059,7 +1062,7 @@
             <!-- Data Efficiency Table and Text -->
             <div style="margin-top: 30px; overflow: auto;">
                 <div style="float: left; width: 50%; margin-right: 25px; margin-bottom: 15px;">
-                    <div class="figure-caption" style="text-align: center; margin-bottom: 15px;">
+                    <div class="figure-caption" style="margin-bottom: 15px;">
                         <strong>Table 3:</strong> Training GMM and DiT<sup>DH</sup>-S on stratified 10% of ImageNet256 with 8192 modes and spherical covariance without mode conditioning.
                     </div>
                     <table style="width: 100%; margin: 0; border: 1px solid var(--primary-dark);">
@@ -1093,7 +1096,7 @@
                         We evaluate MM-FM in a data-scarce regime by training on only 10% of ImageNet256 (stratified sampling). Table 3 demonstrates that MM-FM achieves substantially better performance than the baseline with Gaussian source distribution and independent coupling, when both models are trained to convergence (800 epochs).
                     </p>
                     <p>
-                        Our MM-FM lowers the learning complexity and thus reduce the demand of training data volume. The visual examples are in Figure 6.
+                        Our MM-FM lowers the learning difficulty and thus reduces the demand of training data volume. The visual examples for this experiment are in Figure 6.
                     </p>
                 </div>
             </div>
@@ -1107,6 +1110,113 @@
                     <strong>Figure 6:</strong> The qualitative comparison of unconditional generation (50 ODE steps) without guidance between baseline and MM-FM (without mode conditioning) on 10% ImageNet256 trained for 800 epochs using DiT<sup>DH</sup>-S. (a) FID=24.33 (b) FID=7.48
                 </div>
             </div>
+
+            <h3 style="margin-top: 5px;">Ablation Study of Foundation Model Encoders</h3>
+
+            <p>
+                We ablate the choice of foundation model encoder used for GMM fitting. Table 4 compares DINOv2-B, SigLIP2-B, and MAE-B in terms of linear probing accuracy and downstream generation quality (FID-50K).
+            </p>
+
+            <!-- Foundation Model Encoders Table -->
+            <div class="figure-caption" style="margin-bottom: 5px;">
+                <strong>Table 4:</strong> Ablation on foundation model encoders for GMM fitting on ImageNet256 with 8192 modes, diagonal covariance, and soft assignment. We report Linear Probing Accuracy (%) and FID-50K.
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Method</th>
+                        <th>Tokenizer</th>
+                        <th>Probing Acc. ↑</th>
+                        <th>Epoch</th>
+                        <th>Prior</th>
+                        <th>Cond.</th>
+                        <th>FID ↓</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>DiT<sup>DH</sup>-XL</td>
+                        <td>DINOv2-B</td>
+                        <td style="text-align: center;">84.5%</td>
+                        <td>20</td>
+                        <td>Gaussian</td>
+                        <td>-</td>
+                        <td>16.51</td>
+                    </tr>
+                    <tr>
+                        <td>DiT<sup>DH</sup>-XL + MM-FM</td>
+                        <td>DINOv2-B</td>
+                        <td style="text-align: center;">84.5%</td>
+                        <td>20</td>
+                        <td>GMM</td>
+                        <td>-</td>
+                        <td>4.95</td>
+                    </tr>
+                    <tr>
+                        <td>DiT<sup>DH</sup>-XL + MM-FM</td>
+                        <td>DINOv2-B</td>
+                        <td style="text-align: center;">84.5%</td>
+                        <td>20</td>
+                        <td>GMM</td>
+                        <td>Mode</td>
+                        <td>4.84</td>
+                    </tr>
+                    <tr style="border-top: 2px solid var(--primary-dark);">
+                        <td>DiT<sup>DH</sup>-XL</td>
+                        <td>SigLIP2-B</td>
+                        <td style="text-align: center;">79.1%</td>
+                        <td>20</td>
+                        <td>Gaussian</td>
+                        <td>-</td>
+                        <td>15.21</td>
+                    </tr>
+                    <tr>
+                        <td>DiT<sup>DH</sup>-XL + MM-FM</td>
+                        <td>SigLIP2-B</td>
+                        <td style="text-align: center;">79.1%</td>
+                        <td>20</td>
+                        <td>GMM</td>
+                        <td>-</td>
+                        <td>8.27</td>
+                    </tr>
+                    <tr>
+                        <td>DiT<sup>DH</sup>-XL + MM-FM</td>
+                        <td>SigLIP2-B</td>
+                        <td style="text-align: center;">79.1%</td>
+                        <td>20</td>
+                        <td>GMM</td>
+                        <td>Mode</td>
+                        <td>7.38</td>
+                    </tr>
+                    <tr style="border-top: 2px solid var(--primary-dark);">
+                        <td>DiT<sup>DH</sup>-XL</td>
+                        <td>MAE-B</td>
+                        <td style="text-align: center;">68.0%</td>
+                        <td>20</td>
+                        <td>Gaussian</td>
+                        <td>-</td>
+                        <td>27.19</td>
+                    </tr>
+                    <tr>
+                        <td>DiT<sup>DH</sup>-XL + MM-FM</td>
+                        <td>MAE-B</td>
+                        <td style="text-align: center;">68.0%</td>
+                        <td>20</td>
+                        <td>GMM</td>
+                        <td>-</td>
+                        <td>17.48</td>
+                    </tr>
+                    <tr>
+                        <td>DiT<sup>DH</sup>-XL + MM-FM</td>
+                        <td>MAE-B</td>
+                        <td style="text-align: center;">68.0%</td>
+                        <td>20</td>
+                        <td>GMM</td>
+                        <td>Mode</td>
+                        <td>16.40</td>
+                    </tr>
+                </tbody>
+            </table>
         </section>
 
         <!-- Theory -->
@@ -1137,7 +1247,7 @@
             </p>
 
             <p style="margin-top: 15px;">
-                We compare two coupling strategies: <strong>mode coupling</strong> \(\pi_{\text{mode}}\) (our approach, where each source mode \(p_k\) flows only to the corresponding target mode \(q_k\)) vs. <strong>independent coupling</strong> \(\pi_{\text{ind}}\) (standard approach, where source and target are sampled independently). We measure generation complexity by:
+                We compare two coupling strategies: <strong>mode coupling</strong> \(\pi_{\text{mode}}\) (our approach, where each source mode \(p_k\) flows only to the corresponding target mode \(q_k\)) vs. <strong>independent coupling</strong> \(\pi_{\text{ind}}\) (standard approach, where source and target are sampled independently). We measure the complexity of the multimodal generation problem by:
             </p>
 
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 25px 0;">
@@ -1174,6 +1284,9 @@
                     </li>
                     <li>The velocity field \(\tilde{u}_t\) bridging \(\tilde{p}\) and \(\tilde{q}\) is Lipschitz continuous for every \(t \in (0,1)\), and its Jacobian is defined globally in \(\Omega\).</li>
                 </ol>
+                <p style="font-size: 0.95em; line-height: 1.8; margin-top: 15px;">
+                    <strong>Interpretation:</strong> The first item essentially states that the modes \(\{\mu_k\}_{k=1}^m\) are sufficiently well-separated. The second item is a technical assumption on \(\tilde{p}\) and \(\tilde{q}\), commonly satisfied when both \(\tilde{p}\) and \(\tilde{q}\) are smooth, and their ratio \(\frac{\tilde{p}}{\tilde{q}}(x)\) is always nonzero.
+                </p>
             </div>
 
             <!-- Main Theorem Box -->
@@ -1212,10 +1325,10 @@
         <section id="conclusion">
             <h2>Conclusion</h2>
             <p>
-                We propose MM-FM, a co-design of a multimodal source distribution and mode coupling that exploits structured latent space imposed by foundation models. It delivers faster convergence and superior generation performance compared to the classifc flow matching recipe that stays on unimodal Gaussian and independent coupling. We wish it provides a principled flow design for the co-evolution of foundation models and generative models. As more foundation models emerges across domains, training flow-based generative models can be made efficient by MM-FM.
+                We propose MM-FM, which leverages vision foundation models as encoders to reveal the union-of-manifold structures in the latent space, and co-designs a multimodal GMM source distribution and mode coupling to exploit these structures. It delivers faster convergence and superior generation performance compared to the classic flow matching recipe that stays on unimodal Gaussian and independent coupling. We wish it provides a principled flow design for the co-evolution of foundation models and generative models. As more foundation models emerge across domains, training flow-based generative models can be made efficient by MM-FM.
             </p>
             <p>
-                For curious readers, we recommend <a href="https://neurips.cc/virtual/2024/tutorial/99531" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Flow Matching Tutorial Guide</a> and <a href="https://rectifiedflow.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Rectified Flow Tutorial</a> for flow matching basics. For the insights into structured latents and training efficiency of flow-based models, we also recommend <a href="https://howlin-wang.github.io/svg" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">SVG</a> and <a href="https://rae-dit.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">RAE</a>'s project page.
+                For curious readers, we recommend <a href="https://neurips.cc/virtual/2024/tutorial/99531" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Flow Matching Guide</a>, <a href="https://rectifiedflow.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Rectified Flow Tutorial</a>, and <a href="https://alechelbling.com/blog/rectified-flow" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">A Visual Introduction to Rectified Flows</a> for flow matching basics. For the insights into structured latents and training efficiency, we also recommend <a href="https://howlin-wang.github.io/svg" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">SVG</a> and <a href="https://rae-dit.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">RAE</a>'s project page.
             </p>
         </section>
 
@@ -1225,14 +1338,11 @@
             <p>If you find this work useful, please consider citing:</p>
             <div class="bibtex-container">
                 <button class="copy-button" onclick="copyBibtex()">Copy</button>
-                <div class="bibtex" id="bibtex">@misc{mm-fm,
-    title={Flow Matching for Multimodal Distributions}, 
-    author={Gaoxiang Luo and Frank Cole and Sihang Zhang and Yuxiang Wan and Yulong Lu and Ju Sun},
-    year={2025},
-    eprint={xxxx.xxxxx},
-    archivePrefix={arXiv},
-    primaryClass={cs.CV},
-    url={https://arxiv.org/abs/xxxx.xxxxx},
+                <div class="bibtex" id="bibtex">@InProceedings{Luo_2026_CVPR,
+    author    = {Luo, Gaoxiang and Cole, Frank and Zhang, Sihang and Wan, Yuxiang and Lu, Yulong and Sun, Ju},
+    title     = {Flow Matching for Multimodal Distributions},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    year      = {2026},
 }</div>
             </div>
         </section>
@@ -1246,7 +1356,7 @@
                     <a href="https://dl.acm.org/doi/10.5555/3692070.3692573" target="_blank">[Paper]</a>
                 </li>
                 <li id="ref2">
-                    Zheng et al. "Diffusion Transformers with Representation Autoencoders." <em>arXiv</em>.
+                    Zheng et al. "Diffusion Transformers with Representation Autoencoders." <em>ICLR'26</em>.
                     <a href="https://rae-dit.github.io" target="_blank">[Project Page]</a>
                 </li>
                 <li id="ref3">
@@ -1254,7 +1364,7 @@
                     <a href="https://arxiv.org/abs/2502.03444" target="_blank">[Paper]</a>
                 </li>
                 <li id="ref4">
-                    Shi et al. "Latent Diffusion Model without Variational Autoencoder." <em>arXiv</em>.
+                    Shi et al. "Latent Diffusion Model without Variational Autoencoder." <em>ICLR'26</em>.
                     <a href="https://howlin-wang.github.io/svg" target="_blank">[Project Page]</a>
                 </li>
                 <li id="ref5">
@@ -1320,6 +1430,10 @@
                 <li id="ref20">
                     Chen et al. "Gaussian Mixture Flow Matching Models." <em>ICML'25</em>.
                     <a href="https://arxiv.org/abs/2504.05304" target="_blank">[Paper]</a>
+                </li>
+                <li id="ref21">
+                    Brown et al. "Verifying the Union of Manifolds Hypothesis for Image Data." <em>ICLR'23</em>.
+                    <a href="https://arxiv.org/abs/2207.02862" target="_blank">[Paper]</a>
                 </li>
             </ol>
         </section>
