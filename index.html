@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Flow Matching for Multimodal Distributions</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
         :root {
@@ -36,8 +38,8 @@
         }
 
         body {
-            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            line-height: 1.7;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.65;
             color: var(--text-color);
             background-color: var(--bg-color);
             overflow-x: hidden;
@@ -141,6 +143,7 @@
             margin-bottom: 25px;
             font-weight: 700;
             line-height: 1.3;
+            letter-spacing: -0.02em;
             color: var(--primary-dark);
         }
 
@@ -261,6 +264,7 @@
             font-weight: 600;
             position: relative;
             padding-bottom: 12px;
+            letter-spacing: -0.02em;
         }
 
         h2::after {
@@ -280,6 +284,7 @@
             margin-bottom: 15px;
             color: var(--text-color);
             font-weight: 500;
+            letter-spacing: -0.01em;
         }
 
         p {
@@ -653,7 +658,7 @@
             </div>
             <div style="margin-top: 15px; padding: 20px 30px; background: var(--bg-secondary); border-radius: 10px; box-shadow: var(--shadow); border-left: 4px solid var(--primary-dark);">
                 <span style="font-weight: 700; color: var(--primary-dark); font-size: 1em;">TL;DR:</span>
-                <span style="color: var(--text-color); font-size: 1em; margin-left: 8px;">(a) Mixture source distribution (e.g., GMM) and mode-dependent data coupling co-design (b) for multimodal target distribution (e.g., foundation model as visual tokenizers) (c) for <strong>[training,inference,data]-efficient</strong> flow matching.</span>
+                <span style="color: var(--text-color); font-size: 1em; margin-left: 8px;">(a) Mixture source distribution (e.g., GMM) and mode-dependent data coupling co-design (b) for multimodal target distribution (e.g., foundation model as encoders) (c) for <strong>[training,inference,data]-efficient</strong> flow matching.</span>
             </div>
         </div>
 
@@ -674,7 +679,7 @@
                                 Gaussian → Gaussian (Independent Coupling)
                             </div>
                             <div style="font-size: 0.95em; color: var(--text-color); line-height: 1.6;">
-                                The classic flow matching paradigm where the target distribution (e.g., SD-VAE <a href="#references" class="cite">1</a> latent) is unimodal Gaussian.
+                                The classic flow matching paradigm where the target distribution (e.g., SD-VAE <a href="#references" class="cite">1</a> latent space) is unimodal Gaussian.
                             </div>
                         </div>
                     </div>
@@ -1327,7 +1332,7 @@
                 We propose MM-FM, which leverages vision foundation models as encoders to reveal the union-of-manifold structures in the latent space, and co-designs a multimodal GMM source distribution and mode coupling to exploit these structures. It delivers faster convergence and superior generation performance compared to the classic flow matching recipe that stays on unimodal Gaussian and independent coupling. We wish it provides a principled flow design for the co-evolution of foundation models and generative models. As more foundation models emerge across domains, training flow-based generative models can be made efficient by MM-FM.
             </p>
             <p>
-                For curious readers, we recommend <a href="https://neurips.cc/virtual/2024/tutorial/99531" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Flow Matching Guide</a>, <a href="https://rectifiedflow.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Rectified Flow Tutorial</a>, and <a href="https://alechelbling.com/blog/rectified-flow" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">A Visual Introduction to Rectified Flows</a> for flow matching basics. For the insights into structured latents and training efficiency, we also recommend <a href="https://howlin-wang.github.io/svg" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">SVG</a> and <a href="https://rae-dit.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">RAE</a>'s project page.
+                For curious readers, we recommend <a href="https://neurips.cc/virtual/2024/tutorial/99531" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Flow Matching Guide</a>, <a href="https://rectifiedflow.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">Rectified Flow Tutorial</a>, and <a href="https://alechelbling.com/blog/rectified-flow" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">A Visual Introduction to Rectified Flows</a> for flow matching basics. For insights to structured latents and training efficiency, we also recommend <a href="https://howlin-wang.github.io/svg" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">SVG</a> and <a href="https://rae-dit.github.io" target="_blank" style="color: var(--primary-color); text-decoration: none; border-bottom: 1px solid var(--primary-color);">RAE</a>'s blog.
             </p>
         </section>
 
